@@ -7,14 +7,15 @@ class TurmaController {
     static async pegaTodasTurmas(req, res) {
         const { data_inicial, data_final } = req.query;
         const where = {}
-        data_inicial || data_final ? where.data_inicio = {} : null
+        data_inicial || data_final ? where.data_inicio = {} : null // Verifica se os valores existem
         data_inicial ? where.data_inicio[Op.gte] = data_inicial : null
         data_final ? where.data_inicio[Op.lte] = data_final : null
+        // /turmas?data_inicial=2020-01-01&data_final=2020-03-01
         try {
-        const todasAsTurmas = await database.Turmas.findAll({where})
-        return res.status(200).json(todasAsTurmas)
+            const todasAsTurmas = await database.Turmas.findAll({where})
+            return res.status(200).json(todasAsTurmas)
         } catch (error) {
-        return res.status(500).json(error.message);
+            return res.status(500).json(error.message);
         }
     }
     static async pegaTurma(req, res){

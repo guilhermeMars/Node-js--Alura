@@ -1,4 +1,5 @@
 const database = require('../models'); // já procura o index.js por padrão
+const Sequelize = require('sequelize');
 
 class PessoaController{
     static async pegaPessoasAtivas(req, res){
@@ -116,11 +117,29 @@ class PessoaController{
     static async pegaMatriculas(req, res){
         const { estudanteId } = req.params
         try{
-            const pessoa = await database.Pessoas.findOne( {where: {id: Number(estudanteId)}} );
+            const pessoa = await database.Pessoas.findOne( {where: {id: Number(estudanteId)}, limit: 20, order: [['estudante_id', 'ASC']]} ); // ASC - crescente, DESC - decrescente
             const matriculas = await pessoa.getAulasMatriculadas(); // getAulasMatriculadas - Nome dado ao escopo (models/pessoas.js) com o método get criado automaticamente (mixin)
             return res.status(200).json(matriculas);
             // Podemos resumir mixins em: classes que contêm métodos que podem ser utilizados por outras classes, sem a necessidade de herança direta. Dito de outra forma, um mixin fornece métodos que implementam um certo comportamento em objetos, sem poder ser utilizado sozinho, mas sim para adicionar esse comportamento a outras classes.
             // https://cursos.alura.com.br/course/orm-nodejs-avancando-sequelize/task/79567
+        }catch(error){
+            return res.status(500).json(error.message)
+        }
+    }
+    static async pegaMatriculasTurma(req, res){
+        const {turmaId} = req.params
+        try{
+            const todasMatriculas = await database.Matriculas.findAndCountAll( {where: {turma_id: Number(turmaId), status: 'confirmado'}} )
+            return res.status(200).json(todasMatriculas)
+        }catch(error){
+            return res.status(500).json(error.message)
+        }
+    }
+    static async pegaTurmasLotadas(req, res){
+        const lotacaoTurma = 4;
+        try{
+            const turmasLotadas = await database.Matriculas.findAndCountAll({ where: {status: 'confirmado'}, attributes: ['turma_id'], group: ['turma_id'], having: Sequelize.literal(`count(turma_id) >= ${lotacaoTurma}`)})
+            return res.status(200).json(turmasLotadas.count)
         }catch(error){
             return res.status(500).json(error.message)
         }

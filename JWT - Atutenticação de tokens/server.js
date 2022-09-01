@@ -1,6 +1,9 @@
+require('dotenv').config(); // Configura todas as variáveis de ambiente dentro do programa
+
 const app = require('./app');
 const port = 3000;
 const db = require('./database');
+require('./redis/blacklist');
 
 const routes = require('./rotas');
 routes(app);

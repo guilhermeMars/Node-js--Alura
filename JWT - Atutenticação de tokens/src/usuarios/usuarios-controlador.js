@@ -1,6 +1,20 @@
 const Usuario = require('./usuarios-modelo');
 const { InvalidArgumentError, InternalServerError } = require('../erros');
 
+const jwt = require('jsonwebtoken');
+const blacklist = require('../../redis/manipula-blacklist');
+
+function criaTokenJwt(usuario){
+  const payload = {
+    id: usuario.id
+  };
+
+  const token = jwt.sign(payload, process.env.CHAVE_JWT, { expiresIn: '15m' }); // O segundo parâmetro é o que torna a senha segura
+  // Para isso, o node possui um comando que gera uma string pseudo-aleatório, basta rodar: node -e "console.log(require('crypto').randomBytes(256).toString('base64'))"
+  // Para não deixar a chave hard-coded, nós colocamos em uma variável de ambiente (.env)
+  return token;
+}
+
 module.exports = {
   adiciona: async (req, res) => {
     const { nome, email, senha } = req.body;
@@ -24,6 +38,22 @@ module.exports = {
       } else {
         res.status(500).json({ erro: erro.message });
       }
+    }
+  },
+
+  login: (req, res) =>{ // Se o login for bem sucedido ele só retorna 204 e uma página vazia (e com os cabeçalhos podendo ser úteis)
+    const token = criaTokenJwt(req.user); // User é gerado na hora que o passport.autenticate
+    res.set('Authorization', token);
+    res.status(204).send();
+  },
+
+  logout: async (req, res) =>{
+    try{
+      const token = req.token;
+      await blacklist.adiciona(token);
+      res.status(204).send();
+    }catch(error){
+      res.status(500).json({ erro: error.message })
     }
   },
 
